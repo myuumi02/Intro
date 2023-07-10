@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rdf:RDF
+   xmlns:ns1="http://example.com/%"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+>
+  <rdf:Description rdf:about="http://example.com/%E0%B8%A7%E0%B8%B4%E0%B8%97%E0%B8%A2%E0%B8%B2%E0%B8%A5%E0%B8%B1%E0%B8%A2%E0%B8%9E%E0%B8%B8%E0%B8%97%E0%B8%98%E0%B8%A8%E0%B8%B2%E0%B8%AA%E0%B8%99%E0%B8%B2%E0%B8%99%E0%B8%B2%E0%B8%99%E0%B8%B2%E0%B8%8A%E0%B8%B2%E0%B8%95%E0%B8%B4%20%20%20%28%20%E0%B8%AD%E0%B8%B1%E0%B8%87%E0%B8%81%E0%B8%A4%E0%B8%A9%20%3A%20%20%20International%20%20%20Buddhist%20%20%20College%20%29%20%20">
+    <ns1:E0%B9%80%E0%B8%9B%E0%B9%87%E0%B8%99>['สถาบันอุดมศึกษาเอกชน', 'ในประเทศ', 'ไทย']</ns1:E0%B9%80%E0%B8%9B%E0%B9%87%E0%B8%99>
+    <ns1:E0%B8%95%E0%B8%B1%E0%B9%89%E0%B8%87%E0%B8%AD%E0%B8%A2%E0%B8%B9%E0%B9%88>['ที่', 'อำเภอ', 'สะเดา', 'จังหวัด', 'สงขลา']</ns1:E0%B8%95%E0%B8%B1%E0%B9%89%E0%B8%87%E0%B8%AD%E0%B8%A2%E0%B8%B9%E0%B9%88>
+  </rdf:Description>
+  <rdf:Description rdf:about="http://example.com/%E0%B9%80%E0%B8%A1%E0%B8%B7%E0%B9%88%E0%B8%AD%20%E0%B8%A7%E0%B8%B1%E0%B8%99%E0%B8%97%E0%B8%B5%E0%B9%88%20%20%2018%20%20%20%E0%B8%A1%E0%B8%B4%E0%B8%96%E0%B8%B8%E0%B8%99%E0%B8%B2%E0%B8%A2%E0%B8%99%20%20%20%E0%B8%9E.%E0%B8%A8.%20%20%202540%20%20%20%E0%B9%82%E0%B8%94%E0%B8%A2">
+    <ns1:E0%B8%AA%E0%B8%AD%E0%B8%99>['ทั้ง', 'ใน', 'ระดับ', 'ปริญญาตรี', 'และ', 'บัณฑิตศึกษา']</ns1:E0%B8%AA%E0%B8%AD%E0%B8%99>
+  </rdf:Description>
+  <rdf:Description rdf:about="http://example.com/%E0%B9%81%E0%B8%A5%E0%B8%B0">
+    <ns1:E0%B8%A1%E0%B8%B5>['ศูนย์', 'การศึกษา', 'โคราช']</ns1:E0%B8%A1%E0%B8%B5>
+    <ns1:E0%B8%95%E0%B8%B1%E0%B9%89%E0%B8%87%E0%B8%AD%E0%B8%A2%E0%B8%B9%E0%B9%88>['ที่', 'อำเภอ', 'ปัก', 'ธงชัย', 'จังหวัด', 'นครราชสีมา', 'ก่อ']</ns1:E0%B8%95%E0%B8%B1%E0%B9%89%E0%B8%87%E0%B8%AD%E0%B8%A2%E0%B8%B9%E0%B9%88>
+    <ns1:E0%B8%95%E0%B8%B1%E0%B9%89%E0%B8%87%E0%B8%82%E0%B8%B6%E0%B9%89%E0%B8%99>['ในประเทศ', 'ไทย', 'เมื่อ', 'ปี', 'พ.ศ.', '2546']</ns1:E0%B8%95%E0%B8%B1%E0%B9%89%E0%B8%87%E0%B8%82%E0%B8%B6%E0%B9%89%E0%B8%99>
+  </rdf:Description>
+  <rdf:Description rdf:about="http://example.com/%E0%B9%82%E0%B8%94%E0%B8%A2">
+    <ns1:E0%B8%A3%E0%B8%B1%E0%B8%9A%E0%B8%A3%E0%B8%AD%E0%B8%87>['จาก', 'สำนักงาน', 'คณะกรรมการ', 'การอุดมศึกษา']</ns1:E0%B8%A3%E0%B8%B1%E0%B8%9A%E0%B8%A3%E0%B8%AD%E0%B8%87>
+  </rdf:Description>
+  <rdf:Description rdf:about="http://example.com/%E0%B8%A1%E0%B8%AB%E0%B8%B2%E0%B8%A7%E0%B8%B4%E0%B8%97%E0%B8%A2%E0%B8%B2%E0%B8%A5%E0%B8%B1%E0%B8%A2%E0%B9%80%E0%B8%A7%E0%B9%87%E0%B8%9A%E0%B8%AA%E0%B9%80%E0%B8%95%E0%B8%AD%E0%B8%A3%E0%B9%8C%20%20%20%28%E0%B8%9B%E0%B8%A3%E0%B8%B0%E0%B9%80%E0%B8%97%E0%B8%A8%E0%B9%84%E0%B8%97%E0%B8%A2%29%20%20%20%28%20%E0%B8%AD%E0%B8%B1%E0%B8%87%E0%B8%81%E0%B8%A4%E0%B8%A9%20%3A%20%20%20Webster%20%20%20University%20%20%20Thailand%20%29%20%20">
+    <ns1:E0%B9%80%E0%B8%9B%E0%B9%87%E0%B8%99>['มหาวิทยาลัย', 'ของ', 'สหรัฐอเมริกา']</ns1:E0%B9%80%E0%B8%9B%E0%B9%87%E0%B8%99>
+    <ns1:E0%B9%80%E0%B8%9B%E0%B8%B4%E0%B8%94>['สาขา', 'ในประเทศ', 'ไทย']</ns1:E0%B9%80%E0%B8%9B%E0%B8%B4%E0%B8%94>
+  </rdf:Description>
+  <rdf:Description rdf:about="http://example.com/%E0%B9%81%E0%B8%A5%E0%B8%B0%20%E0%B9%84%E0%B8%94%E0%B9%89">
+    <ns1:E0%B9%80%E0%B8%A5%E0%B8%B4%E0%B8%81%E0%B8%81%E0%B8%B4%E0%B8%88%E0%B8%81%E0%B8%B2%E0%B8%A3>['ตั้งแต่', 'วันที่', '31', 'ธันวาคม', '2564']</ns1:E0%B9%80%E0%B8%A5%E0%B8%B4%E0%B8%81%E0%B8%81%E0%B8%B4%E0%B8%88%E0%B8%81%E0%B8%B2%E0%B8%A3>
+  </rdf:Description>
+</rdf:RDF>
