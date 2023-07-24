@@ -1,0 +1,308 @@
+from fastapi import FastAPI, HTTPException
+from pythainlp.tokenize import sent_tokenize, Tokenizer
+from pythainlp.corpus.common import thai_words
+from pythainlp.util import dict_trie
+from pythainlp.tag import pos_tag
+import pandas as pd
+from mtranslate import translate
+import nltk
+from nltk.stem import WordNetLemmatizer
+from nltk.tokenize import word_tokenize
+from nltk.tag import pos_tag as nltk_pos_tag
+from typing import List
+from pydantic import BaseModel
+from pythainlp.tag import NER
+from fastapi import FastAPI, HTTPException
+
+app = FastAPI(debug=True)
+
+# Download necessary NLTK data
+nltk.download('wordnet')
+nltk.download('punkt')
+nltk.download('averaged_perceptron_tagger')
+
+class InputData(BaseModel):
+    data: List[str]
+
+@app.post("/process_text/")
+def process_text(data_input: InputData):
+    # Extract the list of strings from the input data
+    data_list = data_input.data
+
+    # Initialize a list to store the results for each text
+    all_results = []
+
+    # Process each input text
+    for text in data_list:
+        # Tokenize sentences
+        sentences_test = sent_tokenize(text)
+
+        # Initialize NER
+        ner = NER("thainer")
+
+        # Store the results in a list
+        ner_results = []
+
+        for sentence in sentences_test:
+            tags = ner.tag(sentence)
+            words, tag_types = [], []
+            current_tag = None
+
+            for word, tag_type in tags:
+                if tag_type.startswith('B-'):
+                    current_tag = tag_type[2:]
+                    words.append(word)
+                    tag_types.append(tag_type)
+                elif tag_type.startswith('I-') and current_tag:
+                    words[-1] += f" {word}"
+                else:
+                    current_tag = None
+
+            tagged_sentence = []
+            for word, tag_type in zip(words, tag_types):
+                tagged_sentence.append(f"<{tag_type[2:]}>{word}</{tag_type[2:]}>")
+
+            if tagged_sentence:
+                ner_results.append(" ".join(tagged_sentence))
+
+        # Create the custom list to store the results
+        all_entities = []
+
+        for result in ner_results:
+            # Get the entity text from the NER result
+            entity_text = result.split(">")[1].split("<")[0]
+
+            # Check if the entity type contains "DATE"
+            entity_type = result.split(">")[0][1:]
+
+            # For entity type containing "DATE", keep the spaces between words
+            if "DATE" in entity_type:
+                # Remove extra spaces and store the date value
+                entity_text_cleaned = " ".join(entity_text.split())
+                all_entities.append(entity_text_cleaned)
+            else:
+                # Tokenize the entity text and store it as a list of words
+                entity_list = entity_text.split()
+                # If the entity type contains multiple words, join them without spaces
+                if len(entity_list) > 1:
+                    all_entities.append("".join(entity_list))
+                else:
+                    all_entities.append(entity_text)
+
+        # Store all the results as a set
+        merge = set(all_entities)
+
+        # เก็บผลลัพธ์การตัดคำ
+        tokenized = []
+
+        # Tokenize with custom dictionary merge and thai_words
+        custom_words_list = set(thai_words())
+        custom_dict = list(merge) + list(custom_words_list)
+        tokenizer = Tokenizer(custom_dict=custom_dict, engine='newmm')
+
+        # Tokenize each sentence and store the results in the tokenized list
+        for sentence in sentences_test:
+            tokenized_sentence = tokenizer.word_tokenize(sentence)
+            tokenized.append(tokenized_sentence)
+
+        # Print the tokenized result
+        print(tokenized)
+
+        # เก็บผลลัพธ์การตัดคำพร้อมกับ POS tagging
+        pos_tokenized = []
+
+        for sentence in sentences_test:
+            words_tokenized = tokenizer.word_tokenize(sentence)
+            pos_tagged_sentence = pos_tag(words_tokenized)
+            filtered_pos_tagged_sentence = [(word, pos) for word, pos in pos_tagged_sentence if pos != 'PUNC']
+            pos_tokenized.append(filtered_pos_tagged_sentence)
+
+
+
+        results = []
+        subject = None
+        verb = None
+        objects = []
+        nouns = []
+
+        for pos_list in pos_tokenized:
+            for word, pos in pos_list:
+                if not verb and pos.startswith(('VACT', 'VSTA', 'VATT')):
+                    verb = word
+                    if not subject:
+                        subject = " ".join(nouns) if nouns else None
+
+                elif verb and pos.startswith(('VACT', 'VSTA', 'VATT')):
+                    result = {'subject': subject, 'verb': verb, 'object': objects}
+                    results.append(result)
+
+                    nouns = []
+                    verb = word
+                    objects = []
+                    subject = " ".join(nouns) if nouns else None
+
+                elif verb and pos.startswith(('N', 'DCNM', 'CMTR', 'DONM', 'RPRE', 'CNIT', 'FINX')):
+                    if objects and pos == 'PUNC':
+                        objects[-1] += word
+                    else:
+                        obj = word
+                        objects.append(obj)
+
+                elif not verb:
+                    nouns.append(word)
+
+            if verb:
+                result = {'subject': subject, 'verb': verb, 'object': objects}
+                results.append(result)
+
+            subject = None
+            verb = None
+            objects = []
+
+        NEW_SVO = []
+        prev_subject = None
+
+        for item in results:
+            if item['subject'] is None:
+                item['subject'] = prev_subject
+            else:
+                prev_subject = item['subject']
+
+            # Check if 'subject', 'verb', and 'object' are all present and non-empty in the item
+            if all(key in item and item[key] for key in ['subject', 'verb', 'object']):
+                NEW_SVO.append(item)
+
+
+
+        # Create DataFrame from NEW_SVO
+        df = pd.DataFrame(NEW_SVO)
+
+        # สร้างตัวแปร column_data_N เพื่อเก็บคอลัมน์ 'Verb' จาก DataFrame data_N
+        column_data = df['verb']
+
+        # เก็บข้อความที่แปลเป็นภาษาอังกฤษ
+        translations = []
+        # วนลูปผ่านทุกข้อความใน column_data_N
+        for text in column_data:
+            translation = translate(text, 'en', 'auto') # แปล text ไทยเป็นอังกฤษใช้ 'en' เป็นภาษาเป้าหมาย, 'auto' ให้ระบบเลือกภาษาเป้าหมายอัตโนมัติ
+            translations.append(translation) # เพิ่มข้อความแปลลงในรายการ translations
+
+        df_Translated = pd.DataFrame({'Extracted Verb POS*Thai': column_data, 'Translated Verb POS*Eng': translations})
+        df_Translated['Translated Verb POS*Eng'] = df_Translated['Translated Verb POS*Eng'].str.lower()
+
+        # สร้าง Lemmatizer  เพื่อใช้ในการตัด affixes และแปลงคำเป็นรูปของคำพื้นฐาน
+        lemmatizer = WordNetLemmatizer()
+
+        # กำหนดฟังก์ชันสำหรับตัด affixes และใช้ Lemmatizer
+        def lemmatize_word(word, tag):
+            if tag.startswith('V'):  # ตรวจสอบว่าเป็นคำกริยาหรือไม่
+                return lemmatizer.lemmatize(word, pos='v')
+            else:
+                return lemmatizer.lemmatize(word)
+
+        # แปลงข้อมูลในคอลัมน์ 'Translated Verb POS*Eng_N' เป็นรูปแบบคำพื้นฐาน
+        def lemmatize_text(text):
+            tokens = word_tokenize(text)  # แบ่งคำในประโยคเป็นโทเค็น
+            tagged_tokens = nltk_pos_tag(tokens)  # ประกาศประเภทของคำในโทเค็น
+            lemmatized_tokens = [lemmatize_word(token, tag) for token, tag in tagged_tokens]  # แปลงคำในโทเค็นเป็นรูปของคำพื้นฐาน
+            return ' '.join(lemmatized_tokens)
+
+        df_Translated['Translated Verb POS*Eng'] = df_Translated['Translated Verb POS*Eng'].apply(lemmatize_text)
+
+
+        # กลุ่มและนับแถวที่ซ้ำกันโดยใช้คอลัมน์ 'Extracted Verb POS*Thai' และ 'Translated Verb POS*Eng'
+        duplicates = df_Translated[df_Translated.duplicated(subset=['Extracted Verb POS*Thai', 'Translated Verb POS*Eng'], keep=False)]
+        duplicate_counts = duplicates.groupby(['Extracted Verb POS*Thai', 'Translated Verb POS*Eng']).size().reset_index(name='Count')
+
+        # เรียงลำดับค่า 'Count' จากมากไปน้อย
+        sorted_duplicate_counts = duplicate_counts.sort_values(by='Count', ascending=False)
+
+        # หากลุ่มและนับแถวที่มีค่าในคอลัมน์ "Translated Verb POS*Eng" เหมือนกัน
+        def group_and_count(df):
+            grouped_duplicates = df.groupby(df['Translated Verb POS*Eng'].ne(df['Translated Verb POS*Eng'].shift()).cumsum()).apply(lambda x: x.sort_values(by='Count', ascending=False))
+            grouped_duplicates = grouped_duplicates.reset_index(drop=True)  # แยก index เพื่อกลับเป็นคอลัมน์ธรรมดา
+            grouped_duplicates['Group'] = grouped_duplicates.groupby('Translated Verb POS*Eng').ngroup()
+            return grouped_duplicates.sort_values(by='Group').drop(columns='Group')
+
+        # สร้าง DataFrame ใหม่
+        df_result = group_and_count(sorted_duplicate_counts)
+
+        # หาแถวที่มีค่าในคอลัมน์ "Translated Verb POS*Eng" ซ้ำกัน
+        duplicates = df_result[df_result.duplicated(subset='Translated Verb POS*Eng', keep=False)]
+
+
+
+        # สร้าง dictionary ในรูปแบบของพจนานุกรมที่เป็นคู่ key-value
+        duplicates_dict = {}
+
+        # วนลูปผ่านแถวของ DF duplicates โดยใช้ฟังก์ชัน iterrows() เพื่อดึงค่าแต่ละแถว
+        for _, row in duplicates.iterrows():
+            key = row['Translated Verb POS*Eng'] # กำหนด key เท่ากับค่าในคอลัมน์ ของแถวปัจจุบันในลูป
+            value = row['Extracted Verb POS*Thai'] # กำหนด value เท่ากับค่าในคอลัมน์ ของแถวปัจจุบันในลูป
+            if key in duplicates_dict: # ตรวจ key อยู่ใน duplicates_dict หรือไม่ หากอยู่นำ value เพิ่มเข้าไปในรายการที่สัมพันธ์กับ key
+                duplicates_dict[key].append(value)
+            else: # ถ้า key ไม่อยู่ใน duplicates_dict จะเพิ่ม key เข้าไปใน duplicates_dict และกำหนดค่าให้เป็นรายการที่มี value เป็นสมาชิกเดียว
+                duplicates_dict[key] = [value]
+
+        # วนลูปผ่าน key-value ใน duplicates_dict และสร้าง dictionary
+        duplicates_list = [{k: v} for k, v in duplicates_dict.items()]
+
+
+        duplicates_dict_modified = {}  # สร้าง dictionary เปล่าเพื่อเก็บค่าที่ปรับแต่งและจัดกลุ่ม
+
+        for key, values in duplicates_dict.items():  # วนลูปผ่าน key-value ใน duplicates_dict
+            duplicates_dict_modified[key] = {  # เพิ่ม key-value ที่ปรับแต่งเข้าสู่ duplicates_dict_modified
+                'Alt': values,  # กำหนดค่า 'Alt' เป็นค่าซ้ำซ้อนทั้งหมด
+                'default': values[0] if values else None  # กำหนดค่า 'default' เป็นค่าแรก (หรือ None ถ้าไม่มีค่าซ้ำซ้อน)
+            }
+
+        # สร้างรายการ duplicates_list_modified จาก key-value ใน duplicates_dict_modified
+        duplicates_list_modified = [{k: v} for k, v in duplicates_dict_modified.items()]
+
+
+        # สร้าง DataFrame ใหม่โดยคัดลอก DataFrame "df_Translated"
+        df_modified = df_Translated.copy()
+
+        for item in duplicates_list_modified:  # วนลูปผ่านรายการพจนานุกรมที่มีค่าซ้ำซ้อนที่แก้ไข
+            eng_word = list(item.keys())[0]  # ดึงคีย์เป็นคำศัพท์ภาษาอังกฤษ
+            alt_values = item[eng_word]['Alt']  # ดึงค่าซ้ำซ้อนทั้งหมด
+            default_value = item[eng_word]['default']  # ดึงค่าซ้ำซ้อนแรก (หรือ None)
+
+            mask = df_modified['Translated Verb POS*Eng'] == eng_word  # สร้างเงื่อนไขการเลือกแถวใน DataFrame
+            df_modified.loc[mask, 'Extracted Verb POS*Thai'] = df_modified.loc[mask, 'Extracted Verb POS*Thai'].apply(
+                lambda x: default_value if x in alt_values else x
+            )
+
+
+        # สร้าง DataFrame ใหม่ 'NEW_Main' ที่มีคอลัมน์ 'Main Verb POS*Thai' และมีค่าจากคอลัมน์ 'Extracted Verb POS*Thai'
+        NEW_Main = pd.DataFrame(df_modified['Extracted Verb POS*Thai'])
+        NEW_Main = NEW_Main.rename(columns={'Extracted Verb POS*Thai': 'Main Verb POS*Thai'})
+
+
+        # รวม DataFrame 'df_Translated' และ 'NEW_Main'
+        df_Main_Verb = pd.concat([df_Translated, NEW_Main], axis=1)
+
+
+        # สร้าง DataFrame ใหม่โดยคัดลอก
+        df_modified_Triple = pd.DataFrame(NEW_SVO)
+
+        # ทำการแทนที่ค่าในคอลัมน์ 'Verb' ด้วยค่าจากคอลัมน์ 'Main Verb POS*Thai'
+        df_modified_Triple['verb'] = df_Main_Verb['Main Verb POS*Thai']
+
+
+        # Initialize an empty list to store the formatted results
+        formatted_results = []
+
+        # Iterate through each row in the DataFrame
+        for _, row in df_modified_Triple.iterrows():
+            subject = row['subject']
+            verb = row['verb']
+            objects = row['object']
+
+            # Combine the subject, verb, and objects to form the formatted string
+            formatted_result = f"{subject} = {verb} -> {', '.join(objects)}"
+            formatted_results.append(formatted_result)
+
+        all_results.append(formatted_results)
+
+    return all_results
